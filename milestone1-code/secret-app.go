@@ -6,31 +6,55 @@ import (
 	"os"
 )
 
-func healthCheckHandler(writer http.ResponseWriter, request *http.Request) {
-	message := []byte("Hello from health check handler!")
-	if _, err := writer.Write(message); err != nil {
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	message := []byte("ok")
+	if _, err := w.Write(message); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func secretCheckHandler(writer http.ResponseWriter, request *http.Request) {
-	message := []byte("Hello from secret handler!")
-	if _, err := writer.Write(message); err != nil {
+func secretHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		secretHandleGet(w, r)
+	case "POST":
+		secretHandlePost(w, r)
+	}
+}
+
+func secretHandleGet(w http.ResponseWriter, r *http.Request) {
+	message := []byte("GET/secret handler")
+	if _, err := w.Write(message); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func secretHandlePost(w http.ResponseWriter, r *http.Request) {
+	message := []byte("POST/secret handler")
+	if _, err := w.Write(message); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func main() {
 	// Data file
-	if dataPath := os.Getenv("DATA_FILE_PATH"); dataPath == "" {
+	dataPath := os.Getenv("DATA_FILE_PATH")
+	if dataPath == "" {
 		log.Fatal("Environment variable DATA_FILE_PATH not found!")
 	}
+
+	// Create data file
+	f, err := os.Create(dataPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
 
 	// HTTP server
 	mux := http.NewServeMux()
 
 	// Handlers
-	mux.HandleFunc("/", secretCheckHandler)
+	mux.HandleFunc("/", secretHandler)
 	mux.HandleFunc("/healthcheck", healthCheckHandler)
 
 	if err := http.ListenAndServe(":8080", mux); err != nil {

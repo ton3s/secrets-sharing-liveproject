@@ -10,6 +10,11 @@ DATA_FILE_PATH=./data.json ./secret-app
 ## Test the web server
 
 ```bash
+# GET
 curl localhost:8080/
-Hello from secret handler!%
+GET/secret handler
+
+# POST
+curl -X "POST" localhost:8080/
+POST/secret handler
 ```
