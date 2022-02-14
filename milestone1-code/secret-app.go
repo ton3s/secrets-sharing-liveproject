@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +13,7 @@ import (
 
 type Secrets struct {
 	mu   sync.Mutex
-	file *os.File
+	path string
 	data map[string]string
 }
 
@@ -34,7 +35,21 @@ func (s *Secrets) addSecret(secret string) string {
 	// Add to map
 	s.data[hash] = secret
 
-	// TODO: Save map to file
+	// Marshal the map into a JSON string
+	data, err := json.Marshal(s.data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(data))
+
+	// Save map to file
+	f, err := os.Create(s.path)
+	if err != nil {
+		log.Fatal("Error creating new file", err)
+	}
+	if _, err := f.Write(data); err != nil {
+		log.Fatal(err)
+	}
 
 	return hash
 }
@@ -95,21 +110,44 @@ func secretHandlePost(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
+	var f *os.File
+
 	// Data file
 	dataPath := os.Getenv("DATA_FILE_PATH")
 	if dataPath == "" {
 		log.Fatal("Environment variable DATA_FILE_PATH not found!")
 	}
 
-	// TODO: Check if data file already exists
-	// TODO: Read data from file into the map
-	// Create data file if it doesn't exist
-	f, err := os.Create(dataPath)
-	if err != nil {
-		log.Fatal(err)
+	// Check if data file already exists
+	if _, err := os.Stat(dataPath); err != nil {
+		// Create data file if it doesn't exist
+		if f, err = os.Create(dataPath); err != nil {
+			log.Fatal("Error creating new file", err)
+		}
+	} else {
+		// Open existing file
+		if f, err = os.OpenFile(
+			dataPath,
+			os.O_RDWR|os.O_CREATE,
+			0644,
+		); err != nil {
+			log.Fatal("Error opening existing file", err)
+		}
+
+		// Read the contents of file into map
+		jsonData, err := io.ReadAll(f)
+		if err != nil {
+			log.Fatal("Error reading JSON data!", err)
+		}
+		if len(jsonData) != 0 {
+			if err := json.Unmarshal(jsonData, &secrets.data); err != nil {
+				log.Fatal("Error converting JSON to map!", err)
+			}
+		}
+		fmt.Println(secrets.data)
 	}
 	defer f.Close()
-	secrets.file = f
+	secrets.path = dataPath
 
 	// HTTP server
 	mux := http.NewServeMux()
