@@ -23,6 +23,9 @@ func newSecrets() *Secrets {
 }
 
 func (s *Secrets) init(dataPath string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	var f *os.File
 
 	// Check if data file already exists
@@ -76,5 +79,6 @@ func (s *Secrets) addSecret(secret string) string {
 	if _, err := f.Write(data); err != nil {
 		log.Fatal(err)
 	}
+
 	return hash
 }

@@ -11,8 +11,8 @@ DATA_FILE_PATH=./data.json ./secret-app
 
 ```bash
 # GET
-curl localhost:8080/
-GET/secret handler
+curl localhost:8080/ca63dc2acc2522785933852d4ae3b181
+{"data":"my$sdfsdfuper$secret"}
 
 # POST
 curl -X "POST" \
